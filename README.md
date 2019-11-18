@@ -34,6 +34,10 @@ postgres=#CREATE USER ADMIN WITH PASSWORD 'PASSWORD';
 postgres=#GRANT ALL PRIVILEGES ON DATABASE QUESUE_DB TO "admin";
 ```
 
+#### Setup Environ
+Announce your local variables to .env in the directory with settings.py
+Check .env.example
+
 ## Run project
 ```
 (env) ~/queue_backend$ python manage.py runserver
