@@ -27,6 +27,7 @@ $ source env/bin/activate
 
 #### Setup postgresql
 ```
+$ sudo apt-get postgresql-common
 $ sudo -u postgres psql
 postgres=#CREATE DATABASE QUEUE_DB;
 postgres=#CREATE USER ADMIN WITH PASSWORD 'PASSWORD';
