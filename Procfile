@@ -1,2 +1,2 @@
-web: gunicorn showtime.wsgi --log-file -
+web: gunicorn itmoprojectqueue.wsgi --log-file -
 
