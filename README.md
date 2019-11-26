@@ -42,3 +42,14 @@ Check .env.example
 ```
 (env) ~/queue_backend$ python manage.py runserver
 ```
+
+## Heroku
+Start
+```
+(env) ~/queue_backend$ heroku login
+```
+
+Restart
+```
+(env) ~/queue_backend$ heroku restart
+```
