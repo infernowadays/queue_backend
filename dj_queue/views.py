@@ -1,14 +1,16 @@
 import json
-from django.views import View
+from rest_framework.views import APIView
+
 from django.contrib.auth.models import User
 from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
     HTTP_200_OK
 )
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
 
 from django.db.models import F
-from rest_framework.response import Response
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
 from django.core import serializers
@@ -16,13 +18,16 @@ from django.core import serializers
 from .models import Queue, Membership
 
 
-class GetQueuesView(View):
+class GetQueuesView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication, )
+
     def get(self, request):
         queues = Queue.objects.all().values('id', 'name')
         return JsonResponse(list(queues), status=200, safe=False)
 
 
-class GetQueueInfoView(View):
+class GetQueueInfoView(APIView):
     def get(self, request, queue_id):
         queue = Queue.objects.extra(
             select={
@@ -44,23 +49,17 @@ class GetQueueInfoView(View):
         return JsonResponse(queue, status=200, safe=False)
 
 
-class CreateQueueView(View):
+class CreateQueueView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         name = self.request.POST.get('name')
         queue = Queue.objects.create(name=name)
 
         return JsonResponse({'id': queue.id, 'name': queue.name}, status=200, safe=False)
 
-        # for user in users:
-        #     try:
-        #         found_user = User.objects.get(username=user)
-        #         queue.user.add(found_user)
-        #     except User.DoesNotExist:
-        #         return JsonResponse({'error': 'User ' + user + ' does not exist'}, status=404)
 
-
-
-class AddMemberToAQueueView(View):
+class AddMemberToAQueueView(APIView):
     def post(self, request, queue_id):
         queue = Queue.objects.get(id=queue_id)
 
