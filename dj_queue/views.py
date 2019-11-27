@@ -7,6 +7,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_200_OK
 )
+from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 
@@ -54,7 +55,11 @@ class CreateQueueView(APIView):
 
     def post(self, request):
         name = self.request.POST.get('name')
-        queue = Queue.objects.create(name=name)
+        key = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+
+        owner_id = Token.objects.get(key=key).user_id
+        owner = User.objects.get(id=owner_id)
+        queue = Queue.objects.create(name=name, owner=owner)
 
         return JsonResponse({'id': queue.id, 'name': queue.name}, status=200, safe=False)
 
@@ -68,3 +73,16 @@ class AddMemberToAQueueView(APIView):
         membership = Membership.objects.create(queue=queue, member=member, position=-1)
 
         return JsonResponse({'id': member.id, 'login': member.username, 'position': membership.position}, status=200, safe=False)
+
+
+class EditQueueMember(APIView):
+    def put(self, request, queue_id, member_id):
+        position = self.request.data.get('position')
+        membership = Membership.objects.get(queue_id=queue_id, member_id=member_id)
+        membership.position = position
+        membership.save()
+
+        member = User.objects.get(id=member_id)
+
+        return JsonResponse({'id': member.id, 'name': member.username, 'position': membership.position}, status=200, safe=False)
+
