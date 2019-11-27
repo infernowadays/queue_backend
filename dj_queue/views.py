@@ -86,3 +86,30 @@ class EditQueueMember(APIView):
 
         return JsonResponse({'id': member.id, 'name': member.username, 'position': membership.position}, status=200, safe=False)
 
+
+class ClearMemberships(APIView):
+    def post(self, request):
+        Membership.objects.all().delete()
+        
+        return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+
+
+class ClearUsers(APIView):
+    def post(self, request):
+        User.objects.all().delete()
+        
+        return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+
+
+class ClearQueues(APIView):
+    def post(self, request):
+        Queue.objects.all().delete()
+        
+        return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+
+
+class ClearTokens(APIView):
+    def post(self, request):
+        Token.objects.all().delete()
+        
+        return JsonResponse({'status': 'Ok'}, status=200, safe=False)
