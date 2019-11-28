@@ -1,6 +1,5 @@
 import json
 from rest_framework.views import APIView
-
 from django.contrib.auth.models import User
 from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
@@ -57,7 +56,11 @@ class CreateQueueView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        name = self.request.POST.get('name')
+        try:
+            name = self.request.data['name']
+        except KeyError:
+            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+
         key = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
 
         owner_id = Token.objects.get(key=key).user_id
@@ -74,7 +77,11 @@ class AddMemberToAQueueView(APIView):
         except Queue.DoesNotExist:
                 return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
         
-        login = self.request.POST.get('login')
+        try:
+            login = self.request.data['login']
+        except KeyError:
+            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+
         try:
             member = User.objects.get(username=login)
         except User.DoesNotExist:
@@ -90,7 +97,13 @@ class AddMemberToAQueueView(APIView):
 
 class EditQueueMember(APIView):
     def put(self, request, queue_id, member_id):
-        position = self.request.data.get('position')
+        try:
+            position = self.request.data['position']
+        except KeyError:
+            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+
+        if position is None:
+            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
 
         try:
             membership = Membership.objects.get(queue_id=queue_id, member_id=member_id)

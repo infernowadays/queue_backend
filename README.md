@@ -53,3 +53,9 @@ Restart
 ```
 (env) ~/queue_backend$ heroku restart
 ```
+
+Migrations
+```
+(env) ~/queue_backend$ heroku run python manage.py makemigrations
+(env) ~/queue_backend$ heroku run python manage.py migrate
+```

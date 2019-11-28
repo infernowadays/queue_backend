@@ -9,13 +9,20 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_200_OK
 )
+from rest_framework.views import APIView
 from django.http import JsonResponse
+from rest_framework.permissions import AllowAny
 
 
-class LoginView(View):
+class LoginView(APIView):
+    permission_classes = (AllowAny, )
+    
     def post(self, request):
-        username = request.POST.get("login")
-        password = request.POST.get("password")
+        try:
+            username = self.request.data['login']
+            password = self.request.data['password']
+        except KeyError:
+            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
         
         if username is None or password is None:
             return JsonResponse({'error': 'provide all the data'}, status=400)
@@ -28,12 +35,17 @@ class LoginView(View):
         return JsonResponse({'token': token.key}, status=200, safe=False)
 
 
-class SignUpView(View):
+class SignUpView(APIView):
+    permission_classes = (AllowAny, )
+
     def post(self, request):
-        username = request.POST.get("login")
-        first_name = request.POST.get("name")
-        password = request.POST.get("password")
-        
+        try:
+            username = self.request.data['login']
+            first_name = self.request.data['name']
+            password = self.request.data['password']
+        except KeyError:
+            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+       
         if username is None or first_name is None or password is None:
             return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
 
