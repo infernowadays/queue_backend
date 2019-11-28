@@ -13,11 +13,5 @@ class Membership(models.Model):
     member = models.ForeignKey(User, on_delete=models.CASCADE)
     position = models.IntegerField(default=-1)
 
-    # def save(self, *args, **kwargs):
-    #     with transaction.atomic():
-    #         super().save(*args, **kwargs) 
-    #         self.name = self.queue_name()
-    #         super().save(*args, **kwargs) 
-
-    # def queue_name(self):
-    #     return 'Queue#' + str(self.id)
+    class Meta:
+        unique_together = ('queue', 'member',)

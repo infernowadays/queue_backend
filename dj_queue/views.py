@@ -10,7 +10,7 @@ from rest_framework.status import (
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
-
+from django.db import IntegrityError
 from django.db.models import F
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
@@ -30,12 +30,15 @@ class GetQueuesView(APIView):
 
 class GetQueueInfoView(APIView):
     def get(self, request, queue_id):
-        queue = Queue.objects.extra(
-            select={
-                'ownerMemberId': 'owner_id'
-            }
-        ).values('id', 'name', 'ownerMemberId').get(id=queue_id)
-                
+        try:
+            queue = Queue.objects.extra(
+                select={
+                    'ownerMemberId': 'owner_id'
+                }
+            ).values('id', 'name', 'ownerMemberId').get(id=queue_id)
+        except Queue.DoesNotExist:
+            return JsonResponse({'error': 'does not exist'}, status=404, safe=False)
+
         queue['members'] = list([])
         member_info = dict({})
 
@@ -66,23 +69,41 @@ class CreateQueueView(APIView):
 
 class AddMemberToAQueueView(APIView):
     def post(self, request, queue_id):
-        queue = Queue.objects.get(id=queue_id)
-
+        try:
+            queue = Queue.objects.get(id=queue_id)
+        except Queue.DoesNotExist:
+                return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
+        
         login = self.request.POST.get('login')
-        member = User.objects.get(username=login)
-        membership = Membership.objects.create(queue=queue, member=member, position=-1)
-
+        try:
+            member = User.objects.get(username=login)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'user does not exist'}, status=404, safe=False)
+        
+        try:
+            membership = Membership.objects.create(queue=queue, member=member, position=-1)
+        except IntegrityError as e: 
+            return JsonResponse({'error': 'user is already in a queue'}, status=500, safe=False)
+        
         return JsonResponse({'id': member.id, 'login': member.username, 'position': membership.position}, status=200, safe=False)
 
 
 class EditQueueMember(APIView):
     def put(self, request, queue_id, member_id):
         position = self.request.data.get('position')
-        membership = Membership.objects.get(queue_id=queue_id, member_id=member_id)
+
+        try:
+            membership = Membership.objects.get(queue_id=queue_id, member_id=member_id)
+        except Membership.DoesNotExist:
+            return JsonResponse({'error': 'membership does not exist'}, status=404, safe=False)
+        
         membership.position = position
         membership.save()
 
-        member = User.objects.get(id=member_id)
+        try:
+            member = User.objects.get(id=member_id)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'user does not exist'}, status=404, safe=False)
 
         return JsonResponse({'id': member.id, 'name': member.username, 'position': membership.position}, status=200, safe=False)
 
