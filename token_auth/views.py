@@ -14,6 +14,28 @@ from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
 
 
+class SignUpView(APIView):
+    permission_classes = (AllowAny, )
+
+    def post(self, request):
+        try:
+            first_name = self.request.data['name']
+            username = self.request.data['login']
+            password = self.request.data['password']
+        except KeyError:
+            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+       
+        if username is None or first_name is None or password is None:
+            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+
+        try:
+            user = User.objects.create_user(username=username, first_name=first_name, password=password)
+        except IntegrityError as e: 
+            return JsonResponse({'error': 'user exists'}, status=500, safe=False)
+
+        return JsonResponse({'name': user.first_name, 'login': user.username}, status=200, safe=False)
+
+
 class LoginView(APIView):
     permission_classes = (AllowAny, )
     
@@ -33,26 +55,3 @@ class LoginView(APIView):
         token, _ = Token.objects.get_or_create(user=user)
         
         return JsonResponse({'token': token.key}, status=200, safe=False)
-
-
-class SignUpView(APIView):
-    permission_classes = (AllowAny, )
-
-    def post(self, request):
-        try:
-            username = self.request.data['login']
-            first_name = self.request.data['name']
-            password = self.request.data['password']
-        except KeyError:
-            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
-       
-        if username is None or first_name is None or password is None:
-            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
-
-        try:
-            user = User.objects.create_user(username=username, first_name=first_name, password=password)
-        except IntegrityError as e: 
-            return JsonResponse({'error': 'user exists'}, status=500, safe=False)
-
-        return JsonResponse({'name': user.first_name, 'login': user.username}, status=200, safe=False)
-
