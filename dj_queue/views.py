@@ -1,20 +1,16 @@
-import json
-from rest_framework.views import APIView
 from django.contrib.auth.models import User
-from rest_framework.status import (
-    HTTP_400_BAD_REQUEST,
-    HTTP_404_NOT_FOUND,
-    HTTP_200_OK
-)
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+from django.http import JsonResponse
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import TokenAuthentication
-from django.db import IntegrityError
-from django.db.models import F
-from django.http import JsonResponse
-from django.forms.models import model_to_dict
-from django.core import serializers
+from rest_framework.views import APIView
 
+from dj_queue.forms.QueueForm import QueueForm
+import dj_queue.services.queues as qservice
+import dj_queue.responses.queues as qresp
+import dj_queue.responses.errors as errresp
 from .models import Queue, Membership
 
 
@@ -23,26 +19,12 @@ class QueuesView(APIView):
     authentication_classes = (TokenAuthentication, )
 
     def post(self, request):
-        try:
-            name = self.request.data['name']
-        except KeyError:
-            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+        queue_form = QueueForm(request.data, request.FILES)
+        if not queue_form.is_valid():
+            return errresp.bad_form(queue_form.errors)
+        created_q = qservice.CreateQueue(queue_form.cleaned_data, request.user).execute()
+        return qresp.created(created_q)
 
-        key = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
-
-        try:
-            user_id = Token.objects.get(key=key).user_id
-        except Token.DoesNotExist:
-            return JsonResponse({'error': 'token does not exist'}, status=404, safe=False)
-
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'user does not exist'}, status=404, safe=False)
-        
-        queue = Queue.objects.create(name=name, owner=user)
-
-        return JsonResponse({'id': queue.id, 'name': queue.name}, status=200, safe=False)
 
     def get(self, request):
         key = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
