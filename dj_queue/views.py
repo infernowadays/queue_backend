@@ -9,14 +9,25 @@ from rest_framework.views import APIView
 
 from dj_queue.forms.QueueForm import QueueForm
 import dj_queue.services.queues as qservice
+import dj_queue.services.account as acc_service
 import dj_queue.responses.queues as qresp
 import dj_queue.responses.errors as errresp
+from dj_queue.responses.general import no_content
 from .models import Queue, Membership
+
+
+class AccountView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def patch(self, request):
+        acc_service.UpdateAccount(request.user, request.data).execute()
+        return no_content()
 
 
 class QueuesView(APIView):
     permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication, )
+    authentication_classes = (TokenAuthentication,)
 
     def post(self, request):
         queue_form = QueueForm(request.data, request.FILES)

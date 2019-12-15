@@ -1,11 +1,14 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import path
-from .views import QueuesView, GetQueueInfoView, AddMemberToQueueView, EditQueueMember, DeleteMemberFromQueueView, ClearMemberships, ClearQueues, ClearTokens, ClearUsers
+from .views import QueuesView, GetQueueInfoView, AddMemberToQueueView, EditQueueMember, DeleteMemberFromQueueView, \
+    ClearMemberships, ClearQueues, ClearTokens, ClearUsers, AccountView
 from token_auth import views
 
 urlpatterns = [
     path('auth', csrf_exempt(views.LoginView.as_view())),
     path('users', csrf_exempt(views.SignUpView.as_view())),
+
+    path('me', csrf_exempt(AccountView.as_view())),
 
     path('queues', csrf_exempt(QueuesView.as_view())),
     path('queues/<int:queue_id>', csrf_exempt(GetQueueInfoView.as_view())),

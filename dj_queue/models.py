@@ -19,8 +19,8 @@ class Membership(models.Model):
 
 
 class NotificationReceiverInfo(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    notifications_token = models.CharField(null=False, unique=True, primary_key=True, max_length=256)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    notifications_token = models.CharField(null=False, unique=True, max_length=256)
 
 
 class Invitation(models.Model):
