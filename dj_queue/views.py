@@ -241,9 +241,10 @@ class InviteUsersView(APIView):
                 try:
                     Invitation.objects.create(queue=queue, member=member)
                 except IntegrityError: 
-                    continue
+                    return JsonResponse({'error': '1'}, status=404, safe=False)
+
             except User.DoesNotExist:
-                continue
+                return JsonResponse({'error': '2'}, status=404, safe=False)
 
         return JsonResponse({'status': 'Ok'}, status=200, safe=False)
 
