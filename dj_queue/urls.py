@@ -15,7 +15,7 @@ urlpatterns = [
 
     path('invitations', csrf_exempt(InviteUsersView.as_view())),
     path('invitations/<int:invitation_id>', csrf_exempt(GetInvitationView.as_view())),
-    path('invitations/<int:invitation_id>/responces', csrf_exempt(RespondInvitationView.as_view())),
+    path('invitations/<int:invitation_id>/responses', csrf_exempt(RespondInvitationView.as_view())),
 
     path('clear/memberships', csrf_exempt(ClearMemberships.as_view())),
     path('clear/users', csrf_exempt(ClearUsers.as_view())),
