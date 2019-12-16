@@ -15,7 +15,7 @@ from django.http import JsonResponse
 from django.forms.models import model_to_dict
 from django.core import serializers
 
-from .models import Queue, Membership
+from .models import Queue, Membership, Invitation
 
 
 class QueuesView(APIView):
@@ -172,6 +172,100 @@ class DeleteMemberFromQueueView(APIView):
         except Membership.DoesNotExist:
                 return JsonResponse({'error': 'membership does not exist'}, status=404, safe=False)
         
+        return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+
+
+class GetInvitationView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication, )
+
+    def get(self, request, invitation_id):
+        key = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+
+        try:
+            user_id = Token.objects.get(key=key).user_id
+        except Token.DoesNotExist:
+            return JsonResponse({'error': 'token does not exist'}, status=404, safe=False)
+
+        try:
+            invitation = Invitation.objects.get(id=invitation_id)
+        except Invitation.DoesNotExist:
+            return JsonResponse({'error': 'invitation does not exist'}, status=404, safe=False)
+
+        if invitation.member_id != user_id:
+            return JsonResponse({'error': 'no such invitation'}, status=404, safe=False)
+
+        try:
+            queue = Queue.objects.get(id=invitation.queue_id)
+        except Queue.DoesNotExist:
+            return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
+        
+        response = {
+            'queue': {
+                'id': queue.id,
+                'name': queue.name,
+                'description': queue.description
+            }
+        }
+
+        return JsonResponse(response, status=200, safe=False)
+
+
+class InviteUsersView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication, )
+
+    def post(self, request):
+        try:
+            queue_id = self.request.data['queueId']
+            invitations = self.request.data['invitations']
+            
+            logins = list([])
+            for invitation in invitations:
+                if invitation.get('login') is None:
+                    return JsonResponse({'error': 'invalid syntax'}, status=400, safe=False)
+
+                logins.append(invitation.get('login'))
+
+        except KeyError:
+            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+
+        try:
+            queue = Queue.objects.get(id=queue_id)
+        except Queue.DoesNotExist:
+            return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
+
+        for login in logins:
+            try:
+                member = User.objects.get(username=login)
+                try:
+                    Invitation.objects.create(queue=queue, member=member)
+                except IntegrityError: 
+                    continue
+            except User.DoesNotExist:
+                continue
+
+        return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+
+
+class RespondInvitationView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (TokenAuthentication, )
+
+    def post(self, request, invitation_id):
+        try:
+            decision = self.request.data['decision']
+        except KeyError:
+            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+
+        try:
+            invitation = Invitation.objects.get(id=invitation_id)
+        except Invitation.DoesNotExist:
+            return JsonResponse({'error': 'invitation does not exist'}, status=404, safe=False)
+        
+        invitation.decision = decision
+        invitation.save()
+
         return JsonResponse({'status': 'Ok'}, status=200, safe=False)
 
 
