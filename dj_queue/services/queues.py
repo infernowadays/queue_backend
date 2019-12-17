@@ -66,3 +66,12 @@ def append_user_to_queue(queue, user):
             user=user,
             position=len(queue.queueparticipation_set.all())
         )
+
+
+def find_user_queues(user):
+    participated_queues = set(map(
+        lambda it: it.queue,
+        set(QueueParticipation.objects.filter(user=user))
+    ))
+    owned_queues = set(Queue.objects.filter(owner=user))
+    return participated_queues.union(owned_queues)

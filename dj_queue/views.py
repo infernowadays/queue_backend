@@ -43,7 +43,7 @@ class QueuesView(APIView):
 
     def get(self, request):
         return q_resps.my_queues(
-            list(Queue.objects.filter(owner=request.user)),
+            list(q_service.find_user_queues(request.user)),
             request.user
         )
 
