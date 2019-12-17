@@ -4,6 +4,8 @@ from .views import *
 from token_auth import views
 
 urlpatterns = [
+    path('health', csrf_exempt(HealthView.as_view())),
+
     path('auth', csrf_exempt(views.LoginView.as_view())),
     path('users', csrf_exempt(views.SignUpView.as_view())),
 

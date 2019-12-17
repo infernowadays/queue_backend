@@ -1,9 +1,9 @@
 from django.contrib.auth.models import User
 from django.db import IntegrityError
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 
 from dj_queue.forms.InvitationResponseForm import InvitationResponseForm
@@ -19,6 +19,13 @@ import dj_queue.responses.queues as q_resps
 import dj_queue.responses.participants as qp_resps
 import dj_queue.responses.errors as errresp
 from dj_queue.responses.general import no_content
+
+
+class HealthView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, _):
+        return HttpResponse(status=200)
 
 
 class AccountView(APIView):
