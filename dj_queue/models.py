@@ -8,7 +8,6 @@ class Queue(models.Model):
     name = models.TextField()
     description = models.TextField(null=True)
     owner = models.ForeignKey(User, null=True, db_constraint=False, on_delete=models.SET_NULL)
-    # members = models.ManyToManyField(User, related_name='queues', through='Membership')
 
 
 class AnonParticipant(models.Model):

@@ -42,8 +42,10 @@ class QueuesView(APIView):
         return q_resps.created(created_q)
 
     def get(self, request):
-        queues = Queue.objects.filter(owner=request.user).values('id', 'name')
-        return JsonResponse(list(queues), status=200, safe=False)
+        return q_resps.my_queues(
+            list(Queue.objects.filter(owner=request.user)),
+            request.user
+        )
 
 
 class QueueView(APIView):
@@ -114,7 +116,7 @@ class QueueMembersView(APIView):
         except Queue.DoesNotExist:
             return errresp.not_found(f"queue width id=${queue_id} was not found")
 
-        created_participant = q_service\
+        created_participant = q_service \
             .AddMemberToQueue(queue, new_member_form.cleaned_data).execute()
 
         return qp_resps.anon_created(created_participant)
@@ -242,9 +244,9 @@ class ClearMemberships(APIView):
     authentication_classes = (TokenAuthentication,)
 
     # def delete(self, request):
-        # Membership.objects.all().delete()
-        #
-        # return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+    # Membership.objects.all().delete()
+    #
+    # return JsonResponse({'status': 'Ok'}, status=200, safe=False)
 
 
 class ClearUsers(APIView):
