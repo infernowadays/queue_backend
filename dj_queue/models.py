@@ -32,10 +32,7 @@ class Invitation(models.Model):
     queue = models.ForeignKey(Queue, on_delete=models.CASCADE)
     notifications_send = models.IntegerField(default=0)
     decision = models.CharField(
+        null=True,
         max_length=10,
-        choices=Decision.choices(),
-        default=Decision.DECLINE.value
+        choices=Decision.choices()
     )
-
-    class Meta:
-        unique_together = ('user', 'queue')

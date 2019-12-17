@@ -7,8 +7,8 @@ from dj_queue.services.notifications import send_notification_for
 
 class CreateQueue:
     def __init__(self, data, owner):
-        self.data=data
-        self.owner=owner
+        self.data = data
+        self.owner = owner
 
     def execute(self):
         queue = Queue.objects.create(
@@ -16,16 +16,9 @@ class CreateQueue:
             description=self.data['description'],
             owner=self.owner
         )
-        self._add_owner(queue)
+        append_user_to_queue(queue, self.owner)
         self._create_invitations(queue)
         return queue
-
-    def _add_owner(self, queue):
-        QueueParticipation.objects.create(
-            queue=queue,
-            user=self.owner,
-            position=0
-        )
 
     def _create_invitations(self, queue):
         for invitation in self.data['invitations']:
@@ -65,3 +58,11 @@ class AddMemberToQueue:
 
         return anon_participant
 
+
+def append_user_to_queue(queue, user):
+    if len(queue.queueparticipation_set.filter(user=user)) < 1:
+        QueueParticipation.objects.create(
+            queue=queue,
+            user=user,
+            position=len(queue.queueparticipation_set.all())
+        )

@@ -13,7 +13,6 @@ def queue_info(queue):
     queue_info_dict = {
         'id': queue.id,
         'name': queue.name,
-        'ownerMemberId': queue.owner_id,
         'members': []
     }
 
@@ -24,6 +23,8 @@ def queue_info(queue):
         }
         if participation.user is not None:
             participation_info['name'] = participation.user.first_name
+            if participation.user == queue.owner:
+                queue_info_dict['ownerMemberId'] = participation.id
         elif participation.anon_participant is not None:
             participation_info['name'] = participation.anon_participant.name
         else:

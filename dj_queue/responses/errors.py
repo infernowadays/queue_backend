@@ -28,3 +28,12 @@ def not_found(message):
             'message': message
         }]
     }, status=404)
+
+
+def forbidden(message='current user doesn\'t have access to requested data'):
+    return JsonResponse({
+        'success': False,
+        'errors': [{
+            'message': message
+        }]
+    }, status=403)
