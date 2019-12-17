@@ -6,12 +6,16 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
+from dj_queue.forms.InvitationResponseForm import InvitationResponseForm
 from dj_queue.forms.NewQueueMemberForm import NewQueueMemberForm
-from .models import Queue, Invitation, QueueParticipation
+from .models import Queue, Invitation
 from dj_queue.forms.QueueForm import QueueForm
-import dj_queue.services.queues as qservice
+
 import dj_queue.services.account as acc_service
-import dj_queue.responses.queues as qresp
+import dj_queue.services.queues as q_service
+import dj_queue.services.invitations as inv_service
+
+import dj_queue.responses.queues as q_resps
 import dj_queue.responses.participants as qp_resps
 import dj_queue.responses.errors as errresp
 from dj_queue.responses.general import no_content
@@ -34,22 +38,22 @@ class QueuesView(APIView):
         queue_form = QueueForm(request.data, request.FILES)
         if not queue_form.is_valid():
             return errresp.bad_form(queue_form.errors)
-        created_q = qservice.CreateQueue(queue_form.cleaned_data, request.user).execute()
-        return qresp.created(created_q)
+        created_q = q_service.CreateQueue(queue_form.cleaned_data, request.user).execute()
+        return q_resps.created(created_q)
 
     def get(self, request):
         queues = Queue.objects.filter(owner=request.user).values('id', 'name')
         return JsonResponse(list(queues), status=200, safe=False)
 
 
-class GetQueueInfoView(APIView):
+class QueueView(APIView):
     def get(self, _, queue_id):
         try:
             queue = Queue.objects.get(id=queue_id)
         except Queue.DoesNotExist:
             return errresp.not_found(f'queue with id=${queue_id} wan\'t found')
 
-        return qresp.queue_info(queue)
+        return q_resps.queue_info(queue)
 
     # def delete(self, request, queue_id):
     #     try:
@@ -110,7 +114,7 @@ class QueueMembersView(APIView):
         except Queue.DoesNotExist:
             return errresp.not_found(f"queue width id=${queue_id} was not found")
 
-        created_participant = qservice\
+        created_participant = q_service\
             .AddMemberToQueue(queue, new_member_form.cleaned_data).execute()
 
         return qp_resps.anon_created(created_participant)
@@ -212,25 +216,25 @@ class InviteUsersView(APIView):
         return JsonResponse({'status': 'Ok'}, status=200, safe=False)
 
 
-class RespondInvitationView(APIView):
+class InvitationResponseView(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
 
     def post(self, request, invitation_id):
-        try:
-            decision = self.request.data['decision']
-        except KeyError:
-            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+        inv_response_form = InvitationResponseForm(request.data, request.FILES)
+        if not inv_response_form.is_valid():
+            return errresp.bad_form(inv_response_form.errors)
 
         try:
             invitation = Invitation.objects.get(id=invitation_id)
         except Invitation.DoesNotExist:
-            return JsonResponse({'error': 'invitation does not exist'}, status=404, safe=False)
+            return errresp.not_found(f'invitation with id=${invitation_id} wasn\'t found')
 
-        invitation.decision = decision
-        invitation.save()
+        if not request.user == invitation.user:
+            return errresp.forbidden()
 
-        return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+        inv_service.AcceptInvitation(invitation, inv_response_form.cleaned_data).execute()
+        return no_content()
 
 
 class ClearMemberships(APIView):
