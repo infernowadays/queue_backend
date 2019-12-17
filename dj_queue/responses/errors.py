@@ -19,3 +19,12 @@ def bad_form(errors):
             })
 
     return JsonResponse(response_dict, status=400)
+
+
+def not_found(message):
+    return JsonResponse({
+        'success': False,
+        'errors': [{
+            'message': message
+        }]
+    }, status=404)

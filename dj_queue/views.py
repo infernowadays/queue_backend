@@ -6,11 +6,13 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from .models import Queue, Membership, Invitation
+from dj_queue.forms.NewQueueMemberForm import NewQueueMemberForm
+from .models import Queue, Invitation, QueueParticipation
 from dj_queue.forms.QueueForm import QueueForm
 import dj_queue.services.queues as qservice
 import dj_queue.services.account as acc_service
 import dj_queue.responses.queues as qresp
+import dj_queue.responses.participants as qp_resps
 import dj_queue.responses.errors as errresp
 from dj_queue.responses.general import no_content
 
@@ -35,141 +37,130 @@ class QueuesView(APIView):
         created_q = qservice.CreateQueue(queue_form.cleaned_data, request.user).execute()
         return qresp.created(created_q)
 
-
     def get(self, request):
-        key = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
-
-        try:
-            user_id = Token.objects.get(key=key).user_id
-        except Token.DoesNotExist:
-            return JsonResponse({'error': 'token does not exist'}, status=404, safe=False)
-        
-        queues = Queue.objects.filter(owner_id=user_id).values('id', 'name')
+        queues = Queue.objects.filter(owner=request.user).values('id', 'name')
         return JsonResponse(list(queues), status=200, safe=False)
 
 
 class GetQueueInfoView(APIView):
     def get(self, request, queue_id):
         try:
-            queue = Queue.objects.extra(
-                select={
-                    'ownerMemberId': 'owner_id'
-                }
-            ).values('id', 'name', 'ownerMemberId').get(id=queue_id)
+            queue = Queue.objects.get(id=queue_id)
+            # queue = Queue.objects.extra(
+            #     select={
+            #         'ownerMemberId': 'owner_id'
+            #     }
+            # ).values('id', 'name', 'ownerMemberId').get(id=queue_id)
         except Queue.DoesNotExist:
-            return JsonResponse({'error': 'does not exist'}, status=404, safe=False)
+            return errresp.not_found(f'queue with id=${queue_id} wan\'t found')
 
-        queue['members'] = list([])
-        member_info = dict({})
+        # queue['members'] = list([])
+        # member_info = dict({})
+        #
+        # QueueParticipation.objects.filter(queue=queue)
+        # memberships = Membership.objects.filter(queue_id=queue_id)
+        # for ms in memberships:
+        #     member = User.objects.get(id=ms.member_id)
+        #     member_info['id'] = member.id
+        #     member_info['name'] = member.username
+        #     member_info['position'] = ms.position
+        #     queue['members'].append(member_info)
+        #
+        # return JsonResponse(queue, status=200, safe=False)
 
-        memberships = Membership.objects.filter(queue_id=queue_id)
-        for ms in memberships:
-            member = User.objects.get(id=ms.member_id)
-            member_info['id'] = member.id
-            member_info['name'] = member.username    
-            member_info['position'] = ms.position 
-            queue['members'].append(member_info)           
+        return qresp.queue_info(queue)
 
-        return JsonResponse(queue, status=200, safe=False)
-
-    def delete(self, request, queue_id):
-        try:
-            membership = Membership.objects.filter(queue_id=queue_id).delete()
-        except Membership.DoesNotExist:
-                return JsonResponse({'error': 'membership does not exist'}, status=404, safe=False)
-
-        try:
-            queue = Queue.objects.get(id=queue_id).delete()
-        except Queue.DoesNotExist:
-                return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
-        
-        return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+    # def delete(self, request, queue_id):
+    #     try:
+    #         membership = Membership.objects.filter(queue_id=queue_id).delete()
+    #     except Membership.DoesNotExist:
+    #         return JsonResponse({'error': 'membership does not exist'}, status=404, safe=False)
+    #
+    #     try:
+    #         queue = Queue.objects.get(id=queue_id).delete()
+    #     except Queue.DoesNotExist:
+    #         return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
+    #
+    #     return JsonResponse({'status': 'Ok'}, status=200, safe=False)
 
 
 class EditQueueMember(APIView):
     permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication, )
-    
-    def put(self, request, queue_id, member_id):
-        try:
-            position = self.request.data['position']
-        except KeyError:
-            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+    authentication_classes = (TokenAuthentication,)
 
-        if position is None:
-            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+    # def put(self, request, queue_id, member_id):
+    #     try:
+    #         position = self.request.data['position']
+    #     except KeyError:
+    #         return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+    #
+    #     if position is None:
+    #         return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+    #
+    #     try:
+    #         membership = Membership.objects.get(queue_id=queue_id, member_id=member_id)
+    #     except Membership.DoesNotExist:
+    #         return JsonResponse({'error': 'membership does not exist'}, status=404, safe=False)
+    #
+    #     membership.position = position
+    #     membership.save()
+    #
+    #     try:
+    #         member = User.objects.get(id=member_id)
+    #     except User.DoesNotExist:
+    #         return JsonResponse({'error': 'user does not exist'}, status=404, safe=False)
+    #
+    #     return JsonResponse({'id': member.id, 'name': member.username, 'position': membership.position}, status=200,
+    #                         safe=False)
 
-        try:
-            membership = Membership.objects.get(queue_id=queue_id, member_id=member_id)
-        except Membership.DoesNotExist:
-            return JsonResponse({'error': 'membership does not exist'}, status=404, safe=False)
-        
-        membership.position = position
-        membership.save()
 
-        try:
-            member = User.objects.get(id=member_id)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'user does not exist'}, status=404, safe=False)
-
-        return JsonResponse({'id': member.id, 'name': member.username, 'position': membership.position}, status=200, safe=False)
-
-
-class AddMemberToQueueView(APIView):
+class QueueMembersView(APIView):
     permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication, )
+    authentication_classes = (TokenAuthentication,)
 
+    # Add participant to queue
     def post(self, request, queue_id):
+        new_member_form = NewQueueMemberForm(request.data, request.FILES)
+        if not new_member_form.is_valid():
+            return errresp.bad_form(new_member_form.errors)
+
         try:
             queue = Queue.objects.get(id=queue_id)
         except Queue.DoesNotExist:
-                return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
-        
-        try:
-            login = self.request.data['login']
-            position = self.request.data['position']
-        except KeyError:
-            return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
+            return errresp.not_found(f"queue width id=${queue_id} was not found")
 
-        try:
-            member = User.objects.get(username=login)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'user does not exist'}, status=404, safe=False)
-        
-        try:
-            membership = Membership.objects.create(queue=queue, member=member, position=position)
-        except IntegrityError as e: 
-            return JsonResponse({'error': 'user is already in a queue'}, status=500, safe=False)
-        
-        return JsonResponse({'id': member.id, 'login': member.username, 'position': membership.position}, status=200, safe=False)
+        created_participant = qservice\
+            .AddMemberToQueue(queue, new_member_form.cleaned_data).execute()
+
+        return qp_resps.anon_created(created_participant)
 
 
 class DeleteMemberFromQueueView(APIView):
     permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication, )
+    authentication_classes = (TokenAuthentication,)
 
-    def delete(self, request, queue_id, member_id):
-        try:
-            queue = Queue.objects.get(id=queue_id)
-        except Queue.DoesNotExist:
-                return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
-
-        try:
-            member = User.objects.get(id=member_id)
-        except User.DoesNotExist:
-                return JsonResponse({'error': 'user does not exist'}, status=404, safe=False)
-
-        try:
-            membership = Membership.objects.get(queue_id=queue_id, member_id=member_id).delete()
-        except Membership.DoesNotExist:
-                return JsonResponse({'error': 'membership does not exist'}, status=404, safe=False)
-        
-        return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+    # def delete(self, request, queue_id, member_id):
+    #     try:
+    #         queue = Queue.objects.get(id=queue_id)
+    #     except Queue.DoesNotExist:
+    #         return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
+    #
+    #     try:
+    #         member = User.objects.get(id=member_id)
+    #     except User.DoesNotExist:
+    #         return JsonResponse({'error': 'user does not exist'}, status=404, safe=False)
+    #
+    #     try:
+    #         membership = Membership.objects.get(queue_id=queue_id, member_id=member_id).delete()
+    #     except Membership.DoesNotExist:
+    #         return JsonResponse({'error': 'membership does not exist'}, status=404, safe=False)
+    #
+    #     return JsonResponse({'status': 'Ok'}, status=200, safe=False)
 
 
 class GetInvitationView(APIView):
     permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication, )
+    authentication_classes = (TokenAuthentication,)
 
     def get(self, request, invitation_id):
         key = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
@@ -205,7 +196,7 @@ class GetInvitationView(APIView):
 
 class InviteUsersView(APIView):
     permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication, )
+    authentication_classes = (TokenAuthentication,)
 
     def post(self, request):
         try:
@@ -242,7 +233,7 @@ class InviteUsersView(APIView):
 
 class RespondInvitationView(APIView):
     permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication, )
+    authentication_classes = (TokenAuthentication,)
 
     def post(self, request, invitation_id):
         try:
@@ -263,39 +254,39 @@ class RespondInvitationView(APIView):
 
 class ClearMemberships(APIView):
     permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication, )
+    authentication_classes = (TokenAuthentication,)
 
-    def delete(self, request):
-        Membership.objects.all().delete()
-        
-        return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+    # def delete(self, request):
+        # Membership.objects.all().delete()
+        #
+        # return JsonResponse({'status': 'Ok'}, status=200, safe=False)
 
 
 class ClearUsers(APIView):
     permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication, )
-    
+    authentication_classes = (TokenAuthentication,)
+
     def delete(self, request):
         User.objects.all().delete()
-        
+
         return JsonResponse({'status': 'Ok'}, status=200, safe=False)
 
 
 class ClearQueues(APIView):
     permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication, )
-    
+    authentication_classes = (TokenAuthentication,)
+
     def delete(self, request):
         Queue.objects.all().delete()
-        
+
         return JsonResponse({'status': 'Ok'}, status=200, safe=False)
 
 
 class ClearTokens(APIView):
     permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication, )
-    
+    authentication_classes = (TokenAuthentication,)
+
     def delete(self, request):
         Token.objects.all().delete()
-        
+
         return JsonResponse({'status': 'Ok'}, status=200, safe=False)
