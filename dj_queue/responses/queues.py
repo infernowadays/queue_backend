@@ -9,6 +9,19 @@ def created(created_q):
     }, status=201)
 
 
+def my_queues(queues, user):
+    result_list = []
+    for queue in queues:
+        result_list.append({
+            'id': queue.id,
+            'name': queue.name,
+            'description': queue.description,
+            'isOwnedByMe': queue.owner == user
+        })
+
+    return JsonResponse(result_list, status=200, safe=False)
+
+
 def queue_info(queue):
     queue_info_dict = {
         'id': queue.id,
