@@ -3,6 +3,7 @@ from django.urls import path
 from .views import *
 from token_auth import views
 
+
 urlpatterns = [
     path('auth', csrf_exempt(views.LoginView.as_view())),
     path('users', csrf_exempt(views.SignUpView.as_view())),

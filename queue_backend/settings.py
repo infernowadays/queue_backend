@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'token_auth',
     'dj_queue',
+    'social_django',
 ]
 
 MIDDLEWARE = [
@@ -72,6 +73,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',
             ],
         },
     },
@@ -145,6 +147,21 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated', 
     )
 }
+
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.vk.VKOAuth2',
+    # 'social_auth.backends.contrib.vkontakte.VKontakteOAuth2Backend',
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+SOCIAL_AUTH_POSTGRES_JSONFIELD = True
+# VK_APP_ID = env('SOCIAL_AUTH_VK_OAUTH2_KEY')
+# VK_API_SECRET = env('SOCIAL_AUTH_VK_OAUTH2_SECRET')
+
+SOCIAL_AUTH_VK_OAUTH2_KEY = env('SOCIAL_AUTH_VK_OAUTH2_KEY')
+SOCIAL_AUTH_VK_OAUTH2_SECRET = env('SOCIAL_AUTH_VK_OAUTH2_SECRET')
+SOCIAL_AUTH_VK_APP_USER_MODE = 2
+# APPEND_SLASH=False
 
 # Activate Heroku
 django_heroku.settings(locals())
