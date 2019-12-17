@@ -12,7 +12,7 @@ urlpatterns = [
     path('queues', csrf_exempt(QueuesView.as_view())),
     path('queues/<int:queue_id>', csrf_exempt(GetQueueInfoView.as_view())),
     path('queue/<int:queue_id>/member/<int:member_id>', csrf_exempt(EditQueueMember.as_view())),
-    path('queues/<int:queue_id>/members', csrf_exempt(AddMemberToQueueView.as_view())),
+    path('queues/<int:queue_id>/members', csrf_exempt(QueueMembersView.as_view())),
     path('queues/<int:queue_id>/members/<int:member_id>', csrf_exempt(DeleteMemberFromQueueView.as_view())),
 
     path('invitations', csrf_exempt(InviteUsersView.as_view())),
