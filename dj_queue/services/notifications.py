@@ -9,7 +9,7 @@ def send_notification_for(invitation):
     message = messaging.Message(
         token=user_token,
         data={
-            'invitation_id': invitation.id,
+            'invitation_id': str(invitation.id),
             'queue_name': invitation.queue.name
         }
     )
