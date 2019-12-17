@@ -43,30 +43,11 @@ class QueuesView(APIView):
 
 
 class GetQueueInfoView(APIView):
-    def get(self, request, queue_id):
+    def get(self, _, queue_id):
         try:
             queue = Queue.objects.get(id=queue_id)
-            # queue = Queue.objects.extra(
-            #     select={
-            #         'ownerMemberId': 'owner_id'
-            #     }
-            # ).values('id', 'name', 'ownerMemberId').get(id=queue_id)
         except Queue.DoesNotExist:
             return errresp.not_found(f'queue with id=${queue_id} wan\'t found')
-
-        # queue['members'] = list([])
-        # member_info = dict({})
-        #
-        # QueueParticipation.objects.filter(queue=queue)
-        # memberships = Membership.objects.filter(queue_id=queue_id)
-        # for ms in memberships:
-        #     member = User.objects.get(id=ms.member_id)
-        #     member_info['id'] = member.id
-        #     member_info['name'] = member.username
-        #     member_info['position'] = ms.position
-        #     queue['members'].append(member_info)
-        #
-        # return JsonResponse(queue, status=200, safe=False)
 
         return qresp.queue_info(queue)
 
