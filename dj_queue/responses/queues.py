@@ -31,4 +31,4 @@ def queue_info(queue):
             raise Exception("empty participant")
         queue_info_dict['members'].append(participation_info)
 
-    return JsonResponse({'queue': queue_info_dict}, status=200)
+    return JsonResponse(queue_info_dict, status=200)
