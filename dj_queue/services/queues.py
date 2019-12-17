@@ -16,8 +16,16 @@ class CreateQueue:
             description=self.data['description'],
             owner=self.owner
         )
+        self._add_owner(queue)
         self._create_invitations(queue)
         return queue
+
+    def _add_owner(self, queue):
+        QueueParticipation.objects.create(
+            queue=queue,
+            user=self.owner,
+            position=0
+        )
 
     def _create_invitations(self, queue):
         for invitation in self.data['invitations']:
@@ -56,3 +64,4 @@ class AddMemberToQueue:
             )
 
         return anon_participant
+

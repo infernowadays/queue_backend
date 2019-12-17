@@ -23,7 +23,7 @@ def queue_info(queue):
             'position': participation.position
         }
         if participation.user is not None:
-            participation_info['name'] = participation.user.name
+            participation_info['name'] = participation.user.first_name
         elif participation.anon_participant is not None:
             participation_info['name'] = participation.anon_participant.name
         else:
