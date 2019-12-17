@@ -1,5 +1,7 @@
-from django.db import models, transaction
+from django.db import models
 from django.contrib.auth.models import User
+
+from dj_queue.enums import Decision
 
 
 class Queue(models.Model):
@@ -27,6 +29,11 @@ class Invitation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     queue = models.ForeignKey(Queue, on_delete=models.CASCADE)
     notifications_send = models.IntegerField(default=0)
+    decision = models.CharField(
+        max_length=10,
+        choices=Decision.choices(),
+        default=Decision.DECLINE.value
+    )
 
     class Meta:
         unique_together = ('user', 'queue')
