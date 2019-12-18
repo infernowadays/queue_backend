@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from dj_queue.forms.InvitationResponseForm import InvitationResponseForm
 from dj_queue.forms.NewQueueMemberForm import NewQueueMemberForm
+from dj_queue.forms.PutQueueMemberForm import PutQueueMemberForm
 from .models import Queue, Invitation, QueueParticipation
 from dj_queue.forms.QueueForm import QueueForm
 
@@ -74,36 +75,6 @@ class QueueView(APIView):
         return no_content()
 
 
-class EditQueueMember(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (TokenAuthentication,)
-
-    # def put(self, request, queue_id, member_id):
-    #     try:
-    #         position = self.request.data['position']
-    #     except KeyError:
-    #         return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
-    #
-    #     if position is None:
-    #         return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
-    #
-    #     try:
-    #         membership = Membership.objects.get(queue_id=queue_id, member_id=member_id)
-    #     except Membership.DoesNotExist:
-    #         return JsonResponse({'error': 'membership does not exist'}, status=404, safe=False)
-    #
-    #     membership.position = position
-    #     membership.save()
-    #
-    #     try:
-    #         member = User.objects.get(id=member_id)
-    #     except User.DoesNotExist:
-    #         return JsonResponse({'error': 'user does not exist'}, status=404, safe=False)
-    #
-    #     return JsonResponse({'id': member.id, 'name': member.username, 'position': membership.position}, status=200,
-    #                         safe=False)
-
-
 class QueueMembersView(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
@@ -122,7 +93,7 @@ class QueueMembersView(APIView):
         created_participant = q_service \
             .AddMemberToQueue(queue, new_member_form.cleaned_data).execute()
 
-        return qp_resps.anon_created(created_participant)
+        return qp_resps.anon_participant_created(created_participant)
 
 
 class QueueMemberView(APIView):
@@ -146,6 +117,25 @@ class QueueMemberView(APIView):
         q_service.DeleteMemberFromQueue(participation).execute()
 
         return no_content()
+
+    def put(self, request, queue_id, member_id):
+        put_queue_member_form = PutQueueMemberForm(request.data, request.FILES)
+        if not put_queue_member_form.is_valid():
+            return errresp.bad_form(put_queue_member_form.errors)
+
+        try:
+            queue = Queue.objects.get(id=queue_id)
+        except Queue.DoesNotExist:
+            return errresp.not_found(f"queue width id={queue_id} was not found")
+
+        try:
+            participation = queue.queueparticipation_set.get(id=member_id)
+        except QueueParticipation.DoesNotExist:
+            return errresp.not_found(f'no member with id={member_id} in queue with id={queue_id}')
+
+        q_service.EditQueueMember(participation, put_queue_member_form.cleaned_data).execute()
+
+        return qp_resps.participation_info(participation)
 
 
 class GetInvitationView(APIView):

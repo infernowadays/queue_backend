@@ -63,6 +63,35 @@ class AddMemberToQueue:
         return anon_participant
 
 
+class EditQueueMember:
+    def __init__(self, participation, data):
+        self.participation = participation
+        self.data = data
+
+    def execute(self):
+        all_participations = list(self.participation.queue.queueparticipation_set.all())
+        if 'position' in self.data.keys() and self.data['position'] is not None:
+            prev_position = self.participation.position
+            new_position = self.data['position']
+            if self.participation.position == new_position:
+                return
+
+            if new_position > len(all_participations):
+                new_position = len(all_participations)
+
+            between_prev_and_new_positions = filter(
+                lambda it: prev_position < it.position <= new_position,
+                all_participations
+            )
+
+            for p in between_prev_and_new_positions:
+                p.position -= 1
+                p.save()
+
+            self.participation.position = new_position
+            self.participation.save()
+
+
 class DeleteMemberFromQueue:
     def __init__(self, participation):
         self.participation = participation
