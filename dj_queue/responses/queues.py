@@ -29,7 +29,7 @@ def queue_info(queue):
         'members': []
     }
 
-    for participation in queue.queueparticipation_set.all():
+    for participation in sorted(list(queue.queueparticipation_set.all()), key=lambda it: it.position):
         participation_info = {
             'id': participation.id,
             'position': participation.position
