@@ -65,4 +65,7 @@ class LoginView(APIView):
             return JsonResponse({'error': 'invalid credentials'}, status=401)
         token, _ = Token.objects.get_or_create(user=user)
         
-        return JsonResponse({'token': token.key}, status=200, safe=False)
+        return JsonResponse({
+            'token': token.key,
+            'sqToken': user.squserinfo.sq_token
+        }, status=200, safe=False)
