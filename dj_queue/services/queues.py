@@ -38,9 +38,13 @@ class AddMemberToQueue:
 
     def execute(self):
         name = self.data['name']
-        position = self.data['position']
 
         participants = list(self.queue.queueparticipation_set.all())
+        if 'position' in self.data.keys() and self.data['position'] is not None:
+            position = self.data['position']
+        else:
+            position = len(participants)
+
         if position > len(participants):
             position = len(participants)
 
