@@ -21,6 +21,11 @@ class QueueParticipation(models.Model):
     position = models.IntegerField(default=-1)
 
 
+class SQUserInfo(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    sq_token = models.CharField(null=False, unique=True, max_length=22)
+
+
 class NotificationReceiverInfo(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     notifications_token = models.CharField(null=False, unique=True, max_length=256)

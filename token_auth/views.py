@@ -13,6 +13,10 @@ from rest_framework.views import APIView
 from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
 
+import dj_queue.services.users as u_service
+
+from dj_queue.models import SQUserInfo
+
 
 class SignUpView(APIView):
     permission_classes = (AllowAny, )
@@ -33,7 +37,14 @@ class SignUpView(APIView):
         except IntegrityError as e: 
             return JsonResponse({'error': 'user exists'}, status=500, safe=False)
 
-        return JsonResponse({'name': user.first_name, 'login': user.username}, status=200, safe=False)
+        sq_token = u_service.generate_sq_token(username, password)
+        SQUserInfo.objects.create(user=user, sq_token=sq_token)
+
+        return JsonResponse({
+            'name': user.first_name,
+            'login': user.username,
+            'sqToken': sq_token
+        }, status=201, safe=False)
 
 
 class LoginView(APIView):
