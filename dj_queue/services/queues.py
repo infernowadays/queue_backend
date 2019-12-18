@@ -63,6 +63,40 @@ class AddMemberToQueue:
         return anon_participant
 
 
+class LeaveQueue:
+    def __init__(self, queue, user):
+        self.queue = queue
+        self.user = user
+
+    def execute(self):
+        found = list(self.queue.queueparticipation_set.filter(user=self.user))
+        if len(found) < 1:
+            return
+
+        user_queue_participation = found[0]
+        all_participations = list(self.queue.queueparticipation_set.all())
+        participations_after_user = filter(
+            lambda it: it.position > user_queue_participation.position,
+            all_participations
+        )
+        for participation in participations_after_user:
+            participation.position -= 1
+            participation.save()
+
+        user_queue_participation.delete()
+        all_participations = list(self.queue.queueparticipation_set.all())
+        if self.queue.owner == self.user:
+            sorted_user_participations = sorted(
+                filter(lambda it: it.user is not None, all_participations),
+                key=lambda it: it.position
+            )
+            if len(sorted_user_participations) > 0:
+                self.queue.owner = sorted_user_participations[0].user
+                self.queue.save()
+            else:
+                self.queue.delete()
+
+
 def append_user_to_queue(queue, user):
     if len(queue.queueparticipation_set.filter(user=user)) < 1:
         QueueParticipation.objects.create(

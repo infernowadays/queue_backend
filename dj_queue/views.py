@@ -60,22 +60,18 @@ class QueueView(APIView):
         try:
             queue = Queue.objects.get(id=queue_id)
         except Queue.DoesNotExist:
-            return errresp.not_found(f'queue with id=${queue_id} wan\'t found')
+            return errresp.not_found(f'queue with id={queue_id} wan\'t found')
 
         return q_resps.queue_info(queue)
 
-    # def delete(self, request, queue_id):
-    #     try:
-    #         membership = Membership.objects.filter(queue_id=queue_id).delete()
-    #     except Membership.DoesNotExist:
-    #         return JsonResponse({'error': 'membership does not exist'}, status=404, safe=False)
-    #
-    #     try:
-    #         queue = Queue.objects.get(id=queue_id).delete()
-    #     except Queue.DoesNotExist:
-    #         return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
-    #
-    #     return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+    def delete(self, request, queue_id):
+        try:
+            queue = Queue.objects.get(id=queue_id)
+        except Queue.DoesNotExist:
+            return errresp.not_found(f'queue with id={queue_id} wan\'t found')
+
+        q_service.LeaveQueue(queue=queue, user=request.user).execute()
+        return no_content()
 
 
 class EditQueueMember(APIView):
