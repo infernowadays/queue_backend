@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from dj_queue.forms.InvitationResponseForm import InvitationResponseForm
 from dj_queue.forms.NewQueueMemberForm import NewQueueMemberForm
-from .models import Queue, Invitation
+from .models import Queue, Invitation, QueueParticipation
 from dj_queue.forms.QueueForm import QueueForm
 
 import dj_queue.services.account as acc_service
@@ -125,27 +125,27 @@ class QueueMembersView(APIView):
         return qp_resps.anon_created(created_participant)
 
 
-class DeleteMemberFromQueueView(APIView):
+class QueueMemberView(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
 
-    # def delete(self, request, queue_id, member_id):
-    #     try:
-    #         queue = Queue.objects.get(id=queue_id)
-    #     except Queue.DoesNotExist:
-    #         return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
-    #
-    #     try:
-    #         member = User.objects.get(id=member_id)
-    #     except User.DoesNotExist:
-    #         return JsonResponse({'error': 'user does not exist'}, status=404, safe=False)
-    #
-    #     try:
-    #         membership = Membership.objects.get(queue_id=queue_id, member_id=member_id).delete()
-    #     except Membership.DoesNotExist:
-    #         return JsonResponse({'error': 'membership does not exist'}, status=404, safe=False)
-    #
-    #     return JsonResponse({'status': 'Ok'}, status=200, safe=False)
+    def delete(self, request, queue_id, member_id):
+        try:
+            queue = Queue.objects.get(id=queue_id)
+        except Queue.DoesNotExist:
+            return errresp.not_found(f"queue width id={queue_id} was not found")
+
+        try:
+            participation = queue.queueparticipation_set.get(id=member_id)
+        except QueueParticipation.DoesNotExist:
+            return errresp.not_found(f'no member with id={member_id} in queue with id={queue_id}')
+
+        if queue.owner != request.user:
+            return errresp.forbidden()
+
+        q_service.DeleteMemberFromQueue(participation).execute()
+
+        return no_content()
 
 
 class GetInvitationView(APIView):

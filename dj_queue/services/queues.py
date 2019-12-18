@@ -63,6 +63,14 @@ class AddMemberToQueue:
         return anon_participant
 
 
+class DeleteMemberFromQueue:
+    def __init__(self, participation):
+        self.participation = participation
+
+    def execute(self):
+        remove_participation_from_queue(self.participation)
+
+
 class LeaveQueue:
     def __init__(self, queue, user):
         self.queue = queue
@@ -73,28 +81,33 @@ class LeaveQueue:
         if len(found) < 1:
             return
 
-        user_queue_participation = found[0]
-        all_participations = list(self.queue.queueparticipation_set.all())
-        participations_after_user = filter(
-            lambda it: it.position > user_queue_participation.position,
-            all_participations
-        )
-        for participation in participations_after_user:
-            participation.position -= 1
-            participation.save()
+        remove_participation_from_queue(found[0])
 
-        user_queue_participation.delete()
-        all_participations = list(self.queue.queueparticipation_set.all())
-        if self.queue.owner == self.user:
-            sorted_user_participations = sorted(
-                filter(lambda it: it.user is not None, all_participations),
-                key=lambda it: it.position
-            )
-            if len(sorted_user_participations) > 0:
-                self.queue.owner = sorted_user_participations[0].user
-                self.queue.save()
-            else:
-                self.queue.delete()
+
+def remove_participation_from_queue(participation):
+    user = participation.user
+    queue = participation.queue
+    all_participations = list(queue.queueparticipation_set.all())
+    participations_after = filter(
+        lambda it: it.position > participation.position,
+        all_participations
+    )
+    for participation_after in participations_after:
+        participation_after.position -= 1
+        participation_after.save()
+
+    participation.delete()
+    all_participations = list(queue.queueparticipation_set.all())
+    if user is not None:  # if real user participation
+        sorted_real_user_participations = sorted(
+            filter(lambda it: it.user is not None, all_participations),
+            key=lambda it: it.position
+        )
+        if len(sorted_real_user_participations) < 1:
+            queue.delete()
+        elif queue.owner == user:
+            queue.owner = sorted_real_user_participations[0].user
+            queue.save()
 
 
 def append_user_to_queue(queue, user):
