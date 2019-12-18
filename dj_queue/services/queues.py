@@ -73,19 +73,22 @@ class EditQueueMember:
         if 'position' in self.data.keys() and self.data['position'] is not None:
             prev_position = self.participation.position
             new_position = self.data['position']
-            if self.participation.position == new_position:
-                return
-
             if new_position > len(all_participations):
                 new_position = len(all_participations)
 
-            between_prev_and_new_positions = filter(
-                lambda it: prev_position < it.position <= new_position,
-                all_participations
-            )
+            if self.participation.position == new_position:
+                return
+
+            modifier = 1
+            filter_l = lambda it: new_position < it.position <= prev_position
+            if new_position > prev_position:
+                modifier = -1
+                filter_l = lambda it: prev_position < it.position <= new_position
+
+            between_prev_and_new_positions = filter(filter_l, all_participations)
 
             for p in between_prev_and_new_positions:
-                p.position -= 1
+                p.position += modifier
                 p.save()
 
             self.participation.position = new_position
