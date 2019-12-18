@@ -80,7 +80,7 @@ class EditQueueMember:
                 return
 
             modifier = 1
-            filter_l = lambda it: new_position < it.position <= prev_position
+            filter_l = lambda it: new_position <= it.position < prev_position
             if new_position > prev_position:
                 modifier = -1
                 filter_l = lambda it: prev_position < it.position <= new_position
