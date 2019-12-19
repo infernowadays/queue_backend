@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import transaction
 
-from dj_queue.models import Queue, Invitation, AnonParticipant, QueueParticipation
+from dj_queue.models import Queue, Invitation, AnonParticipant, QueueParticipation, SQUserInfo
 from dj_queue.services.notifications import send_notification_for
 
 
@@ -17,18 +17,18 @@ class CreateQueue:
             owner=self.owner
         )
         append_user_to_queue(queue, self.owner)
-        self._create_invitations(queue)
+        create_invitations(queue, self.data['invitations'])
         return queue
 
-    def _create_invitations(self, queue):
-        for invitation in self.data['invitations']:
-            found_users = list(User.objects.filter(username=invitation['login']))
-            if len(found_users) > 0 and found_users[0] != self.owner:
-                created_invitation = Invitation.objects.create(
-                    queue=queue,
-                    user=found_users[0]
-                )
-                send_notification_for(created_invitation)
+    # def _create_invitations(self, queue):
+    #     for invitation in self.data['invitations']:
+    #         found_users = list(User.objects.filter(username=invitation['login']))
+    #         if len(found_users) > 0 and found_users[0] != self.owner:
+    #             created_invitation = Invitation.objects.create(
+    #                 queue=queue,
+    #                 user=found_users[0]
+    #             )
+    #             send_notification_for(created_invitation)
 
 
 class AddMemberToQueue:
@@ -158,3 +158,23 @@ def find_user_queues(user):
     ))
     owned_queues = set(Queue.objects.filter(owner=user))
     return participated_queues.union(owned_queues)
+
+
+def create_invitations(queue, invitations):
+    all_participations = list(queue.queueparticipation_set.all())
+    for invitation in invitations:
+        if invitation.get('login') is not None:
+            found_users = list(User.objects.filter(username=invitation['login']))
+        else:
+            found_users = list(map(
+                lambda it: it.user,
+                list(SQUserInfo.objects.filter(sq_token__endswith=invitation['shortSqToken'])),
+            ))
+
+        if len(found_users) > 0 \
+                and len(list(filter(lambda it: it.user == found_users[0], all_participations))) < 1:
+            created_invitation = Invitation.objects.create(
+                queue=queue,
+                user=found_users[0]
+            )
+            send_notification_for(created_invitation)

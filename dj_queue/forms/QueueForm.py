@@ -4,7 +4,8 @@ from rest_framework.exceptions import ValidationError
 
 
 class InvitationForm(forms.Form):
-    login = forms.CharField()
+    login = forms.CharField(required=False)
+    shortSqToken = forms.CharField(required=False)
 
 
 class InvitationsField(forms.Field):
@@ -32,7 +33,11 @@ class QueueForm(forms.Form):
                         err.path = f'invitations[{i}].{prop}'
                         self.add_error('invitations', err)
             else:
+                login = invitation_form.cleaned_data['login']
+                if len(login) < 1:
+                    login = None
                 invitations.append({
-                    'login': invitation_form.cleaned_data['login']
+                    'login': login,
+                    'shortSqToken': invitation_form.cleaned_data['shortSqToken']
                 })
         return invitations

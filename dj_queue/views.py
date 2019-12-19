@@ -183,12 +183,10 @@ class InviteUsersView(APIView):
             queue_id = self.request.data['queueId']
             invitations = self.request.data['invitations']
 
-            logins = list([])
             for invitation in invitations:
-                if invitation.get('login') is None:
+                if invitation.get('login') is None \
+                        and invitation.get('shortSqToken') is None:
                     return JsonResponse({'error': 'invalid syntax'}, status=400, safe=False)
-
-                logins.append(invitation.get('login'))
 
         except KeyError:
             return JsonResponse({'error': 'provide all the data'}, status=500, safe=False)
@@ -196,17 +194,9 @@ class InviteUsersView(APIView):
         try:
             queue = Queue.objects.get(id=queue_id)
         except Queue.DoesNotExist:
-            return JsonResponse({'error': 'queue does not exist'}, status=404, safe=False)
+            return errresp.not_found(f"queue width id={queue_id} was not found")
 
-        for login in logins:
-            try:
-                member = User.objects.get(username=login)
-                try:
-                    Invitation.objects.create(queue=queue, member=member)
-                except IntegrityError:
-                    continue
-            except User.DoesNotExist:
-                continue
+        q_service.create_invitations(queue, invitations)
 
         return JsonResponse({'status': 'Ok'}, status=200, safe=False)
 
